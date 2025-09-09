@@ -1,0 +1,7 @@
+requests
+pydantic>=2
+jinja2
+dnspython
+tldextract
+pillow
+python-whois

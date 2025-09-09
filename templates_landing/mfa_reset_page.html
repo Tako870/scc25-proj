@@ -1,0 +1,27 @@
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>MFA Re‑Enrollment</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 2rem; }
+    .card { max-width: 520px; margin: auto; border: 1px solid #ddd; padding: 1.5rem; border-radius: 12px; }
+    .badge { background:#eef; color:#223; display:inline-block; padding:0.25rem 0.5rem; border-radius:6px; font-size:0.8rem; }
+    label { display:block; margin: 0.5rem 0 0.25rem; }
+    input,button { width:100%; padding: 0.75rem; margin-top:0.25rem; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <span class="badge">Training Simulation</span>
+    <h2>Multi‑Factor Authentication Reset</h2>
+    <p>Re‑enroll to continue accessing your account.</p>
+    <form method="POST" action="">
+      <label>Username</label>
+      <input type="text" placeholder="username" required />
+      <label>Temporary Code</label>
+      <input type="text" placeholder="123456" required />
+      <button type="submit">Re‑Enroll</button>
+    </form>
+  </div>
+</body>
+</html>
