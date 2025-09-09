@@ -1,5 +1,0 @@
-id: mfa_reset
-audience_tags: [it, generic]
-subject: "[Action Required] MFA reset for your account"
-body_template: mfa_reset_email.j2
-landing_template: mfa_reset_page.html
