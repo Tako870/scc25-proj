@@ -6,10 +6,21 @@
   </head>
   <body>
     <div class="container">
-      <h2>Typosquat Checker</h2>
-      <input type="text" id="urlInput" placeholder="Enter a URL" />
-      <button id="checkBtn">Check</button>
-      <p id="result"></p>
+
+      <!-- State 1: Input screen -->
+      <div id="inputScreen">
+        <h2>Typosquat Checker</h2>
+        <input type="text" id="urlInput" placeholder="Enter a URL" />
+        <button id="checkBtn">Check</button>
+      </div>
+
+      <!-- State 2: Results screen -->
+      <div id="resultScreen" style="display: none;">
+        <h2>Possible Typosquats</h2>
+        <ul id="typoList"></ul>
+        <button id="backBtn">Back</button>
+      </div>
+
     </div>
     <script src="popup.js"></script>
   </body>
