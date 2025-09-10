@@ -1,6 +1,7 @@
 import random
 
-keyboard = [
+keyboard = [ #### QWERTY ####
+    "1234567890-",
     "qwertyuiop",
     "asdfghjkl",
     "zxcvbnm"
@@ -32,15 +33,23 @@ def swap(placeholder,swappedval, i):
     placeholder[i] = swappedval
     return placeholder
 
-def remove():
-    NotImplementedError
 
-def insert():
-    NotImplementedError
+website = input("Enter a website: ")
 
+def remove_typesquatting(website):
+    print("----- 1 character removed -----")    
+    for i in range(len(website)):
+        placeholder = list(website)
+        del placeholder[i-1]
+        print("".join(placeholder))    
 
-website = str(input("Enter a website: "))
-
+def duplicate_typesquatting(website):
+    print("----- 1 duplicated character added -----")    
+    for i in range(len(website)):
+        placeholder = list(website)
+        duplicatedchar = placeholder[i]
+        placeholder.insert(i+1, duplicatedchar)
+        print("".join(placeholder))  
 
 
 keyboard_adj = build_adjacency(keyboard)
@@ -48,32 +57,37 @@ keyboard_adj = build_adjacency(keyboard)
 # keyboard_adj_list = keyboard_adj['i']
 # print(f"Neighbors of 'i':", keyboard_adj["i"])
 
-def gen_typosquatting(website):
+def swap_typosquatting(website):
     placeholder = list(website)
 
-    
     print("----- 1 character swapped -----")
     for i in range(len(website)):
-        keyboard_adj_list = keyboard_adj[website[i]]
-        randomadjacencydictindex = random.randint(0, len(keyboard_adj_list) - 1)
-        
-    #    print(f"Neighbors of '{website[i]}':", keyboard_adj_list[randomadjacencydictindex])
-        print("".join(swap(placeholder, keyboard_adj_list[randomadjacencydictindex], i)))
-        placeholder = list(website)
-        
-    print("----- 2 characters swapped -----")
+        if website[i] not in keyboard_adj:  # skip if not in keyboard
+            continue
 
+        keyboard_adj_list = keyboard_adj[website[i]]
+        new_char = random.choice(keyboard_adj_list)
+
+        # Ensure first char never becomes "-"
+        if i == 0:
+            while new_char == "-":
+                new_char = random.choice(keyboard_adj_list)
+
+        print("".join(swap(placeholder, new_char, i)))
+        placeholder = list(website)
+
+    print("----- 2 characters swapped -----")
     for i in range(len(website)):
-        for j in range(i+1, len(website)): # 0, 1 0, 2 | 1, 1 1, 2 these are how the values to be swapped are selected
-            # make a copy of the original chars
+        for j in range(i + 1, len(website)):
             new_placeholder = list(website)
 
-            
             if website[i] in keyboard_adj:
                 neigh_i = random.choice(keyboard_adj[website[i]])
+                if i == 0:  # same rule for first char in 2-swap
+                    while neigh_i == "-":
+                        neigh_i = random.choice(keyboard_adj[website[i]])
                 new_placeholder[i] = neigh_i
 
-            
             if website[j] in keyboard_adj:
                 neigh_j = random.choice(keyboard_adj[website[j]])
                 new_placeholder[j] = neigh_j
@@ -81,4 +95,7 @@ def gen_typosquatting(website):
             print("".join(new_placeholder))
 
 
-gen_typosquatting(website)
+
+swap_typosquatting(website)
+remove_typesquatting(website)
+duplicate_typesquatting(website)
