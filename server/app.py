@@ -1,7 +1,12 @@
 import random
 from itertools import combinations, product
 from flask import Flask, request, jsonify
+from dotenv import dotenv_values
 
+config = dotenv_values(".env")
+urlhaus_headers = {
+    "Auth-Key": config.get("URLHAUS-API-KEY")
+}
 app = Flask(__name__)
 
 @app.after_request
@@ -190,6 +195,16 @@ keyboard_adj = build_adjacency(keyboard)
 def find_squats(website):
     squats_list = remove_typesquatting(website) + duplicate_typesquatting(website) + swap_typosquatting(website) + swap2_typosquatting(website) + leetTranslate(website) + edits1(website) + edits2(website)
     return squats_list
+
+def check_alive(urls : list):
+    alive = []
+    for url in urls:
+        try:
+            request.head(url, timeout=3)
+            alive.append(url)
+        except TimeoutError:
+            continue
+    return alive
 
 @app.route('/squats', methods=["POST"])
 def squats():
