@@ -73,7 +73,7 @@ def swap_typosquatting(website):
 
     return results
 
-def swap2_typosquatting(website):    
+def swap2_typosquatting(website):
     results = []
 
     for i in range(len(website)):
@@ -82,15 +82,18 @@ def swap2_typosquatting(website):
 
             if website[i] in keyboard_adj:
                 neigh_i = random.choice(keyboard_adj[website[i]])
-                if i == 0:  # same rule for first char in 2-swap
+                if i == 0:  # first char should not become "-"
                     while neigh_i == "-":
                         neigh_i = random.choice(keyboard_adj[website[i]])
                 new_placeholder[i] = neigh_i
 
             if website[j] in keyboard_adj:
                 neigh_j = random.choice(keyboard_adj[website[j]])
+                if j == 0:  # same safety check for j if it’s the first char
+                    while neigh_j == "-":
+                        neigh_j = random.choice(keyboard_adj[website[j]])
                 new_placeholder[j] = neigh_j
-                
+
             results.append("".join(new_placeholder))
 
     return results
