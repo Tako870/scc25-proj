@@ -1,8 +1,13 @@
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import random
 from itertools import combinations, product
 from flask import Flask, request, jsonify
 from dotenv import dotenv_values
 from urllib.parse import urlparse
+import ssl
+import re
+import requests
+import socket
 import asyncio
 from playwright.async_api import async_playwright
 import base64
@@ -11,17 +16,118 @@ config = dotenv_values(".env")
 urlhaus_headers = {
     "Auth-Key": config.get("URLHAUS-API-KEY")
 }
+REGISTRAR_DOMAINS = [
+    "godaddy.com",
+    "namecheap.com",
+    "hostgator.com",
+    "bluehost.com",
+    "domain.com",
+    "porkbun.com",
+    "dynadot.com"
+]
+
+PARKING_KEYWORDS = [
+    "buy this domain",
+    "is for sale",
+    "domain is parked",
+    "this domain has been registered",
+    "interested in this domain"
+]
+redirect_codes = [301, 302, 307, 308]
 with open("server/data.txt") as file:
     VALID_TLDS = [v[:-1].lower() for v in file.readlines()]
 
 app = Flask(__name__)
 
+
+def supports_https(domain, timeout=3):
+    try:
+        ctx = ssl.create_default_context()
+        with socket.create_connection((domain, 443), timeout=timeout) as sock:
+            with ctx.wrap_socket(sock, server_hostname=domain):
+                return True
+    except Exception:
+        return False
+
+def check_url(url, timeout=3):
+    try:
+        r = requests.get(url, timeout=timeout, allow_redirects=True)
+
+        for resp in r.history:
+            print("Redirected from:", resp.url.lower())
+            loc = resp.headers.get("Location", "").lower()
+            if any(registrar in loc for registrar in REGISTRAR_DOMAINS):
+                return False
+
+        if any(registrar in r.url.lower() for registrar in REGISTRAR_DOMAINS):
+            return False
+
+        content_sample = r.text[:5000].lower()
+        if any(re.search(keyword, content_sample) for keyword in PARKING_KEYWORDS):
+            return False
+
+        return r.status_code < 400
+
+    except requests.RequestException as e:
+        print("Error:", e)
+        return False
+
+
+def process_domain(domain):
+    try:
+        socket.gethostbyname(domain)  # DNS check
+    except socket.gaierror:
+        return None
+
+    if supports_https(domain) and check_url(f"https://{domain}"):
+        return f"https://{domain}"
+    elif check_url(f"http://{domain}"):
+        return f"http://{domain}"
+    return None
+
+
+def resolve_url(domains, max_workers=50):
+    results = []
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = {executor.submit(process_domain, d): d for d in domains}
+        for future in as_completed(futures):
+            result = future.result()
+            if result:
+                results.append(result)
+    return results
+
+
+def is_valid_domain(domain):
+    domain = domain.strip()
+
+    if not domain:
+        return False
+
+    if domain.startswith('.') or domain.endswith('.'):
+        return False
+
+    labels = domain.split('.')
+
+    label_regex = re.compile(r"^(?!-)[A-Za-z0-9-]{1,63}(?<!-)$")
+    for label in labels:
+        if not label_regex.match(label):
+            return False
+
+    if len(domain) > 253:
+        return False
+
+    return True
+
+
 @app.after_request
 def after_request(response):
     response.headers.add('Access-Control-Allow-Origin', '*')
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    response.headers.add('Access-Control-Allow-Headers',
+                         'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods',
+                         'GET,PUT,POST,DELETE,OPTIONS')
     return response
+
 
 def build_adjacency(layout):
     adjacency = {}
@@ -211,7 +317,8 @@ keyboard_adj = build_adjacency(keyboard)
 
 def find_squats(website):
     squats_list = remove_typesquatting(website) + duplicate_typesquatting(website) + swap_typosquatting(
-        website) + swap2_typosquatting(website) + leetTranslate(website) + edits1(website) + edits2(website)
+        website) + swap2_typosquatting(website) + leetTranslate(website) + edits1(website)
+    print(len(edits1(website)))
     return squats_list
 
 
@@ -292,11 +399,20 @@ def squats():
 
     domains = set()
     for url in find_squats(website):
-        if is_valid_tld(url):
+        if is_valid_tld(url) and is_valid_domain(url):
             domains.add(url)
-
-    response = {"domains": list(domains)}
+    print(len(domains))
+    domains = resolve_url(list(domains)[:50])
+    print(domains)
+    response = {"domains": domains}
     return jsonify(response), 200
+
+
+@app.route('/')
+def test():
+    b = resolve_url(['yeow.com', 'kfow.com'])
+    print(b)
+    return b
 
 
 if __name__ == '__main__':
