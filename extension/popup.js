@@ -14,56 +14,48 @@ function checkUrl() {
     return;
   }
 
-  //  Placeholder typosquatted results
-  const typos = [
-    `${url.replace(".com", ".co")}`,
-    `${url.replace(".com", ".cm")}`,
-    `www-${url}`,
-    `${url}123.com`
-  ];
+  API.addTypos({ website: url }, (status, data) => {
+    console.log('Status:', status);
+    console.log('Data:', data);
+    if (status === 200) {
+      // Clear old list
+      typoList.innerHTML = "";
 
+      // Populate list with preview cards
+      data.domains.forEach(t => {
+        const card = document.createElement("div");
+        card.className = "preview-card";
 
-  // Clear old list
-  typoList.innerHTML = "";
+        const favicon = document.createElement("img");
+        // placeholder favicon (real one would use https://www.google.com/s2/favicons)
+        favicon.src = "https://www.google.com/s2/favicons?sz=64&domain_url=" + t;
 
-  // Populate list
-  typos.forEach(t => {
-    const li = document.createElement("li");
-    li.textContent = t;
-    typoList.appendChild(li);
+        const info = document.createElement("div");
+        info.className = "preview-info";
+
+        const domain = document.createElement("p");
+        domain.className = "preview-domain";
+        domain.textContent = t;
+
+        const note = document.createElement("p");
+        note.textContent = "Registered: placeholder date";
+
+        info.appendChild(domain);
+        info.appendChild(note);
+
+        card.appendChild(favicon);
+        card.appendChild(info);
+
+        typoList.appendChild(card);
+      });
+
+      // Switch to results screen
+      inputScreen.style.display = "none";
+      resultScreen.style.display = "block";
+    } else {
+      alert("Error checking URL: " + data.error);
+    }
   });
-
-   // Populate list with preview cards
-  typos.forEach(t => {
-    const card = document.createElement("div");
-    card.className = "preview-card";
-
-    const favicon = document.createElement("img");
-    // placeholder favicon (real one would use https://www.google.com/s2/favicons)
-    favicon.src = "https://www.google.com/s2/favicons?sz=64&domain_url=" + t;
-
-    const info = document.createElement("div");
-    info.className = "preview-info";
-
-    const domain = document.createElement("p");
-    domain.className = "preview-domain";
-    domain.textContent = t;
-
-    const note = document.createElement("p");
-    note.textContent = "Registered: placeholder date";
-
-    info.appendChild(domain);
-    info.appendChild(note);
-
-    card.appendChild(favicon);
-    card.appendChild(info);
-
-    typoList.appendChild(card);
-  });
-
-  // Switch to results screen
-  inputScreen.style.display = "none";
-  resultScreen.style.display = "block";
 }
 
 checkBtn.addEventListener("click", checkUrl);

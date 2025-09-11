@@ -38,3 +38,12 @@ function fetchMethod(url, callback, method = "GET", data = null, token = null) {
 		})
 		.catch((error) => console.error(`Error from ${method} ${url}:`, error));
 }
+
+
+
+const API = {
+    addTypos: (data, callback) => {
+        const url = "http://127.0.0.1:5000/squats"; //Localhost Change to remote if we want remote
+        fetchMethod(url, callback, "POST", data);
+    }
+};
