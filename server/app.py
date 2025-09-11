@@ -5,6 +5,11 @@ from flask import Flask, request, jsonify
 from dotenv import dotenv_values
 from urllib.parse import urlparse
 from datetime import datetime, timedelta
+from PIL import Image
+import io
+import numpy as np
+from skimage.metrics import structural_similarity as ssim
+import imagehash
 import whois
 import random
 import ssl
@@ -100,6 +105,21 @@ def resolve_url(domains, max_workers=50):
                 results.append(result)
     return results
 
+def compare_images(img_bytes1, img_bytes2):
+    # Load from bytes
+    img1 = Image.open(io.BytesIO(img_bytes1)).convert("L")  # grayscale
+    img2 = Image.open(io.BytesIO(img_bytes2)).convert("L")
+
+    # Resize both to same size for fair comparison
+    img2 = img2.resize(img1.size)
+
+    # --- Option 1: SSIM (structural similarity) ---
+    arr1 = np.array(img1)
+    arr2 = np.array(img2)
+    score, diff = ssim(arr1, arr2, full=True)
+    print(f"SSIM similarity: {score:.4f}")  # 1.0 = identical
+    
+    return score, diff
 
 def is_valid_domain(domain):
     domain = domain.strip()
@@ -337,22 +357,27 @@ def check_alive(urls: list):
     return alive
 
 
-def ss_bytes(website, ratings):
-    if ratings > 80:
-        async def capture():
+def ss_bytes(website):
+    # Ensure scheme is present
+    if not website.startswith(("http://", "https://")):
+        website = "https://" + website
+
+    async def capture():
+        print(f"[+] Starting screenshot capture for: {website}")
+        try:
             async with async_playwright() as p:
                 browser = await p.chromium.launch(headless=True)
                 page = await browser.new_page()
-                # NEED CHANGE "HTTPS" cuz can use http oso and the TLD cannot be hardcoded << alr appended lmao
-                await page.goto(f"{website}", wait_until="networkidle")
+                await page.goto(website, wait_until="networkidle")
                 img_bytes = await page.screenshot(full_page=True)
                 await browser.close()
+                print(f"[✓] Screenshot successful for: {website}")
                 return img_bytes
+        except Exception as e:
+            print(f"[✗] Screenshot failed for {website}: {e}")
+            return None
 
-        # Run the async capture function and return bytes
-        return asyncio.run(capture())
-    else:
-        pass
+    return asyncio.run(capture())
 
 # TO GET BACK IMG
 # def save_bytes_to_file(img_bytes, filename="screenshot.png"):
@@ -440,6 +465,8 @@ def squats():
 
     # Store website value in variable
     website = data["website"]
+    
+    this_website_image = ss_bytes(website)
 
     # Check website for TLD, strip and save
 
@@ -449,23 +476,44 @@ def squats():
 
     domains = set()
     for url in find_squats(website):
+        print(url)
         if is_valid_tld(url) and is_valid_domain(url):
             domains.add(url)
     print(len(domains))
+    
+    
     # dont forget to remove the hardcoded[:50] domain limit !IMPORTANT
     domains = resolve_url(list(domains)[:50])
+    results = []
     for url in domains:
+        print("[*] Analyzing:", url)
         a = check_domain(url)
-        if len(a.flags) >= 2:  # stupid hacky ahh function because its 1:30am and my braincell cant think of score values
-            ss_bytes(url)
+        
+        print(a)
+        similarity = None
+        if len(a["flags"]) >= 1:
+            try:
+                this_domain_image = ss_bytes(url)
+                similarity, _ = compare_images(this_website_image, this_domain_image)
+            except Exception as e:
+                similarity = None  # in case screenshot fails
+
+        a["similarity"] = f"{similarity:.4f}"
+
+        # Compare the ss_bytes image with an original website screenshot
+        # Save the similarity score from 0 to 1
+        # Logic is below
+        results.append(a)
+        
     # insert script to send image over
     # ok so idk how yall are gon manage sending image bytes over to the bingus
     # send domains.url.b64img : b64byte this probavly idk man efuseijodv
     # do note that the stupid domain registrars enforce redirects thru js not by protocol level and its always by sum
     # weird ahh js function and ss sent may not be gut
+    
+    print(results)
 
-    response = {"domains": domains}
-    return jsonify(response), 200
+    return jsonify({"domains": results}), 200
 
 
 @app.route('/')

@@ -10,7 +10,7 @@ function checkUrl() {
   const url = urlInput.value.trim();
 
   if (!url) {
-    alert("Please enter a URL.");
+    alert("Please enter a URL in the form www.example.com.");
     return;
   }
 
