@@ -36,20 +36,16 @@ def swap(placeholder,swappedval, i):
 
 
 def remove_typesquatting(website):
-    print("----- 1 character removed -----")    
-    for i in range(len(website)):
-        placeholder = list(website)
-        del placeholder[i-1]
-        print("".join(placeholder))    
+    return [website[:i] + website[i+1:] for i in range(len(website))]
 
 def duplicate_typesquatting(website):
-    print("----- 1 duplicated character added -----")    
+    a =  []
     for i in range(len(website)):
         placeholder = list(website)
         duplicatedchar = placeholder[i]
         placeholder.insert(i+1, duplicatedchar)
-        print("".join(placeholder))  
-
+        a.append("".join(placeholder))
+    return a
 
 keyboard_adj = build_adjacency(keyboard)
 ## UNCOMMENT TO CHECK FOR A SPECIFIC KEY
@@ -58,8 +54,11 @@ keyboard_adj = build_adjacency(keyboard)
 
 def swap_typosquatting(website):
     placeholder = list(website)
-
-    print("----- 1 character swapped -----")
+    ret_obj = {
+        "1swap": [],
+        "2swap": []
+    }
+    #print("----- 1 character swapped -----")
     for i in range(len(website)):
         if website[i] not in keyboard_adj:  # skip if not in keyboard
             continue
@@ -72,10 +71,10 @@ def swap_typosquatting(website):
             while new_char == "-":
                 new_char = random.choice(keyboard_adj_list)
 
-        print("".join(swap(placeholder, new_char, i)))
+        ret_obj["1swap"].append("".join(swap(placeholder, new_char, i)))
         placeholder = list(website)
 
-    print("----- 2 characters swapped -----")
+    #print("----- 2 characters swapped -----")
     for i in range(len(website)):
         for j in range(i + 1, len(website)):
             new_placeholder = list(website)
@@ -90,9 +89,9 @@ def swap_typosquatting(website):
             if website[j] in keyboard_adj:
                 neigh_j = random.choice(keyboard_adj[website[j]])
                 new_placeholder[j] = neigh_j
+            ret_obj["2swap"].append("".join(new_placeholder))
 
-            print("".join(new_placeholder))
-
+    return ret_obj
 def leetTranslate(website) :
     print("--- Leet ---")
     # Initialise dictionary of letters --> leet
@@ -168,11 +167,12 @@ def edits2(website):
         
     return results
 
-website = input("Enter a website: ")
+if __name__ == "__main__":
+    website = input("Enter a website: ")
 
-swap_typosquatting(website)
-remove_typesquatting(website)
-duplicate_typesquatting(website)
-print("\n".join(leetTranslate(website)))
-print("\n".join(edits1(website)))
-print("\n".join(edits2(website)))
+    print(swap_typosquatting(website))
+    print(remove_typesquatting(website))
+    print(duplicate_typesquatting(website))
+    print("\n".join(leetTranslate(website)))
+    print("\n".join(edits1(website)))
+    print("\n".join(edits2(website)))
