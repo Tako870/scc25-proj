@@ -1,9 +1,11 @@
+import random
 from itertools import combinations, product
 from flask import Flask, request, jsonify
 from dotenv import dotenv_values
 from urllib.parse import urlparse
-import string
-import random
+import asyncio
+from playwright.async_api import async_playwright
+import base64
 
 config = dotenv_values(".env")
 urlhaus_headers = {
@@ -222,6 +224,27 @@ def check_alive(urls: list):
         except TimeoutError:
             continue
     return alive
+
+def ss_bytes(website, ratings):
+    if ratings > 80:
+        async def capture():
+            async with async_playwright() as p:
+                browser = await p.chromium.launch(headless=True)
+                page = await browser.new_page()
+                await page.goto(f"https://{website}", wait_until="networkidle") # NEED CHANGE "HTTPS" cuz can use http oso and the TLD cannot be hardcoded
+                img_bytes = await page.screenshot(full_page=True)
+                await browser.close()
+                return img_bytes
+
+        # Run the async capture function and return bytes
+        return asyncio.run(capture())
+    else:
+        pass
+    
+# TO GET BACK IMG    
+# def save_bytes_to_file(img_bytes, filename="screenshot.png"):
+#     with open(filename, "wb") as f:
+#         f.write(img_bytes)
 
 def is_valid_tld(s: str) -> bool:
     """
