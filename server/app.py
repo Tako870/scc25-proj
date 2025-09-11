@@ -42,7 +42,7 @@ PARKING_KEYWORDS = [
     "interested in this domain"
 ]
 redirect_codes = [301, 302, 307, 308]
-with open("server/data.txt") as file:
+with open("data.txt") as file:
     VALID_TLDS = [v[:-1].lower() for v in file.readlines()]
 
 app = Flask(__name__)
@@ -498,7 +498,10 @@ def squats():
             except Exception as e:
                 similarity = None  # in case screenshot fails
 
-        a["similarity"] = f"{similarity:.4f}"
+        if similarity is None:
+            a["similarity"] = "N/A"
+        else:
+            a["similarity"] = f"{similarity:.4f}"
 
         # Compare the ss_bytes image with an original website screenshot
         # Save the similarity score from 0 to 1

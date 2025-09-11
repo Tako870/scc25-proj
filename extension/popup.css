@@ -192,3 +192,48 @@ ul li {
   font-size: 13px;
   color: #fff;
 }
+
+.preview-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  background-color: #1e1e1e;
+  color: #eee;
+  font-family: sans-serif;
+}
+
+.preview-favicon {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 4px;
+}
+
+.preview-info h4 {
+  margin: 0 0 6px 0;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.domain-table {
+  border-collapse: collapse;
+  font-size: 12px;
+  width: 100%;
+}
+
+.domain-table th {
+  text-align: left;
+  padding-right: 6px;
+  vertical-align: top;
+  font-weight: normal;
+  color: #bbb;
+}
+
+.domain-table td {
+  color: #eee;
+  word-break: break-word;
+}

@@ -27,27 +27,45 @@ function checkUrl() {
         card.className = "preview-card";
 
         const favicon = document.createElement("img");
-        // placeholder favicon (real one would use https://www.google.com/s2/favicons)
-        favicon.src = "https://www.google.com/s2/favicons?sz=64&domain_url=" + t;
+        favicon.src = "https://www.google.com/s2/favicons?sz=64&domain_url=" + t.domain;
+        favicon.className = "preview-favicon";
 
         const info = document.createElement("div");
         info.className = "preview-info";
 
-        const domain = document.createElement("p");
-        domain.className = "preview-domain";
-        domain.textContent = t;
+        const domainName = document.createElement("h4");
+        domainName.textContent = t.domain;
 
-        const note = document.createElement("p");
-        note.textContent = "Registered: placeholder date";
+        const table = document.createElement("table");
+        table.className = "domain-table";
 
-        info.appendChild(domain);
-        info.appendChild(note);
+        const fields = [
+          ["Created", t.creation_date || "N/A"],
+          ["Registrar", t.registrar || "N/A"],
+          ["Name servers", t.name_servers ? t.name_servers.join(", ") : "N/A"],
+          ["Similarity", t.similarity || "N/A"]
+        ];
+
+        fields.forEach(([label, value]) => {
+          const row = document.createElement("tr");
+          const th = document.createElement("th");
+          th.textContent = label;
+          const td = document.createElement("td");
+          td.textContent = value;
+          row.appendChild(th);
+          row.appendChild(td);
+          table.appendChild(row);
+        });
+
+        info.appendChild(domainName);
+        info.appendChild(table);
 
         card.appendChild(favicon);
         card.appendChild(info);
 
         typoList.appendChild(card);
       });
+
 
       // Switch to results screen
       inputScreen.style.display = "none";
