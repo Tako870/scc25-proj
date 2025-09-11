@@ -1,16 +1,19 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import random
+from playwright.async_api import async_playwright
 from itertools import combinations, product
 from flask import Flask, request, jsonify
 from dotenv import dotenv_values
 from urllib.parse import urlparse
+from datetime import datetime, timedelta
+import whois
+import random
 import ssl
 import re
 import requests
 import socket
 import asyncio
-from playwright.async_api import async_playwright
 import base64
+import string
 
 config = dotenv_values(".env")
 urlhaus_headers = {
@@ -48,6 +51,7 @@ def supports_https(domain, timeout=3):
                 return True
     except Exception:
         return False
+
 
 def check_url(url, timeout=3):
     try:
@@ -318,7 +322,7 @@ keyboard_adj = build_adjacency(keyboard)
 def find_squats(website):
     squats_list = remove_typesquatting(website) + duplicate_typesquatting(website) + swap_typosquatting(
         website) + swap2_typosquatting(website) + leetTranslate(website) + edits1(website)
-    print(len(edits1(website)))
+
     return squats_list
 
 
@@ -332,13 +336,15 @@ def check_alive(urls: list):
             continue
     return alive
 
+
 def ss_bytes(website, ratings):
     if ratings > 80:
         async def capture():
             async with async_playwright() as p:
                 browser = await p.chromium.launch(headless=True)
                 page = await browser.new_page()
-                await page.goto(f"https://{website}", wait_until="networkidle") # NEED CHANGE "HTTPS" cuz can use http oso and the TLD cannot be hardcoded
+                # NEED CHANGE "HTTPS" cuz can use http oso and the TLD cannot be hardcoded << alr appended lmao
+                await page.goto(f"{website}", wait_until="networkidle")
                 img_bytes = await page.screenshot(full_page=True)
                 await browser.close()
                 return img_bytes
@@ -347,11 +353,12 @@ def ss_bytes(website, ratings):
         return asyncio.run(capture())
     else:
         pass
-    
-# TO GET BACK IMG    
+
+# TO GET BACK IMG
 # def save_bytes_to_file(img_bytes, filename="screenshot.png"):
 #     with open(filename, "wb") as f:
 #         f.write(img_bytes)
+
 
 def is_valid_tld(s: str) -> bool:
     """
@@ -379,6 +386,49 @@ def is_valid_tld(s: str) -> bool:
     return tld in VALID_TLDS
 
 
+def check_domain(domain):
+    # Strip scheme if present
+    parsed = urlparse(domain)
+    domain_name = parsed.netloc or parsed.path
+
+    try:
+        w = whois.whois(domain_name)
+    except Exception as e:
+        return {"domain": domain_name, "error": str(e)}
+
+    # Extract fields safely
+    creation_date = None
+    if isinstance(w.creation_date, list):
+        creation_date = w.creation_date[0]
+    else:
+        creation_date = w.creation_date
+
+    registrar = w.registrar or ""
+    name_servers = w.name_servers or []
+    privacy_enabled = any("privacy" in str(w.org).lower() or
+                          "privacy" in str(email).lower()
+                          for email in (w.emails or []))
+
+    # Suspicious flags
+    flags = []
+    if creation_date and creation_date > datetime.now() - timedelta(days=30):
+        flags.append("RegisterLessThanAMonth")
+    if privacy_enabled:
+        flags.append("PrivacyEnabled")
+    if registrar and "namecheap" in registrar.lower():
+        flags.append("AbusiveRegistrar")
+    if name_servers and any("cloudflare" in ns.lower() for ns in name_servers):
+        flags.append("CloudFlareUse")
+
+    return {
+        "domain": domain_name,
+        "creation_date": creation_date,
+        "registrar": registrar,
+        "name_servers": name_servers,
+        "flags": flags
+    }
+
+
 @app.route('/squats', methods=["POST"])
 def squats():
     # Get JSON data
@@ -402,8 +452,18 @@ def squats():
         if is_valid_tld(url) and is_valid_domain(url):
             domains.add(url)
     print(len(domains))
+    # dont forget to remove the hardcoded[:50] domain limit !IMPORTANT
     domains = resolve_url(list(domains)[:50])
-    print(domains)
+    for url in domains:
+        a = check_domain(url)
+        if len(a.flags) >= 2:  # stupid hacky ahh function because its 1:30am and my braincell cant think of score values
+            ss_bytes(url)
+    # insert script to send image over
+    # ok so idk how yall are gon manage sending image bytes over to the bingus
+    # send domains.url.b64img : b64byte this probavly idk man efuseijodv
+    # do note that the stupid domain registrars enforce redirects thru js not by protocol level and its always by sum
+    # weird ahh js function and ss sent may not be gut
+
     response = {"domains": domains}
     return jsonify(response), 200
 
