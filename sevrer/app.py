@@ -1,12 +1,9 @@
 import random
 from itertools import combinations, product
+from flask import Flask, request, jsonify
 
-keyboard = [ #### QWERTY ####
-    "1234567890-",
-    "qwertyuiop",
-    "asdfghjkl",
-    "zxcvbnm"
-]
+app = Flask(__name__)
+
 
 def build_adjacency(layout):
     adjacency = {}
@@ -34,31 +31,33 @@ def swap(placeholder,swappedval, i):
     placeholder[i] = swappedval
     return placeholder
 
-
 def remove_typesquatting(website):
-    return [website[:i] + website[i+1:] for i in range(len(website))]
+    results = []
+    
+    print("----- 1 character removed -----")    
+    for i in range(len(website)):
+        placeholder = list(website)
+        del placeholder[i-1]
+        results.append("".join(placeholder))
+    
+    return results
 
 def duplicate_typesquatting(website):
-    a =  []
+    results = []
+    
     for i in range(len(website)):
         placeholder = list(website)
         duplicatedchar = placeholder[i]
         placeholder.insert(i+1, duplicatedchar)
-        a.append("".join(placeholder))
-    return a
+        results.append("".join(placeholder))
+        
+    return results
 
-keyboard_adj = build_adjacency(keyboard)
-## UNCOMMENT TO CHECK FOR A SPECIFIC KEY
-# keyboard_adj_list = keyboard_adj['i']
-# print(f"Neighbors of 'i':", keyboard_adj["i"])
-
+# TODO: What does this do, can help me refactor it so that it returns a result
 def swap_typosquatting(website):
     placeholder = list(website)
-    ret_obj = {
-        "1swap": [],
-        "2swap": []
-    }
-    #print("----- 1 character swapped -----")
+    results = []
+
     for i in range(len(website)):
         if website[i] not in keyboard_adj:  # skip if not in keyboard
             continue
@@ -71,10 +70,14 @@ def swap_typosquatting(website):
             while new_char == "-":
                 new_char = random.choice(keyboard_adj_list)
 
-        ret_obj["1swap"].append("".join(swap(placeholder, new_char, i)))
+        results.append("".join(swap(placeholder, new_char, i)))
         placeholder = list(website)
+        
+    return results
 
-    #print("----- 2 characters swapped -----")
+def swap2_typosquatting(website):    
+    results = []
+
     for i in range(len(website)):
         for j in range(i + 1, len(website)):
             new_placeholder = list(website)
@@ -89,9 +92,11 @@ def swap_typosquatting(website):
             if website[j] in keyboard_adj:
                 neigh_j = random.choice(keyboard_adj[website[j]])
                 new_placeholder[j] = neigh_j
-            ret_obj["2swap"].append("".join(new_placeholder))
+                
+            results.append("".join(new_placeholder))
 
-    return ret_obj
+    return results
+
 def leetTranslate(website) :
     print("--- Leet ---")
     # Initialise dictionary of letters --> leet
@@ -147,7 +152,6 @@ def leetTranslate(website) :
 
     return sorted(results)
 
-
 def edits1(website):
     "All edits that are one edit away from `website`."
     letters    = 'abcdefghijklmnopqrstuvwxyz'
@@ -167,12 +171,42 @@ def edits2(website):
         
     return results
 
-if __name__ == "__main__":
-    website = input("Enter a website: ")
+keyboard = [ #### QWERTY ####
+    "1234567890-",
+    "qwertyuiop",
+    "asdfghjkl",
+    "zxcvbnm"
+]
 
-    print(swap_typosquatting(website))
-    print(remove_typesquatting(website))
-    print(duplicate_typesquatting(website))
-    print("\n".join(leetTranslate(website)))
-    print("\n".join(edits1(website)))
-    print("\n".join(edits2(website)))
+keyboard_adj = build_adjacency(keyboard)
+
+def find_squats(website):
+    squats_list = remove_typesquatting(website) + duplicate_typesquatting(website) + swap_typosquatting(website) + swap2_typosquatting(website) + leetTranslate(website) + edits1(website) + edits2(website)
+    return squats_list
+
+@app.route('/squats', methods=["POST"])
+def squats():
+    # Get JSON data
+    data = request.get_json()  # Parse JSON body
+
+    # If there's no body or no website param, error
+    if not data or "website" not in data:
+        return jsonify({"error": "Missing 'website' attribute"}), 400
+
+    # Store website value in variable
+    website = data["website"] 
+    
+    # Check website for TLD, strip and save
+    
+    # This should return a list of possible domains.
+    # do each one and then return the final concatenated result
+    # Add back the TLD
+    
+    domains = find_squats(website)
+    
+    response = {"domains": domains}
+    return jsonify(response), 200
+    
+
+if __name__ == '__main__':
+    app.run(debug=True)
