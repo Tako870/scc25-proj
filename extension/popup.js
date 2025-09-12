@@ -43,7 +43,8 @@ function checkUrl() {
           ["Created", t.creation_date || "N/A"],
           ["Registrar", t.registrar || "N/A"],
           ["Name servers", t.name_servers ? t.name_servers.join(", ") : "N/A"],
-          ["Similarity", t.similarity || "N/A"]
+          ["Similarity", t.similarity || "N/A"],
+          ["Flags", t.flags && t.flags.length > 0 ? t.flags.join(", ") : "None"]
         ];
 
         fields.forEach(([label, value]) => {

@@ -9,7 +9,7 @@ from PIL import Image
 import io
 import numpy as np
 from skimage.metrics import structural_similarity as ssim
-import imagehash
+# import imagehash
 import whois
 import random
 import ssl
@@ -17,7 +17,7 @@ import re
 import requests
 import socket
 import asyncio
-import base64
+# import base64
 import string
 
 config = dotenv_values(".env")
@@ -419,7 +419,8 @@ def check_domain(domain):
     try:
         w = whois.whois(domain_name)
     except Exception as e:
-        return {"domain": domain_name, "error": str(e)}
+        print(f"WHOIS lookup failed for {domain_name}: {e}")
+        return {"domain": domain_name, "error": str(e), "flags": []}
 
     # Extract fields safely
     creation_date = None
@@ -483,7 +484,7 @@ def squats():
     if "limit" not in data:
         limit = len(domains)
     # dont forget to remove the hardcoded[:50] domain limit !IMPORTANT
-    domains = resolve_url(list(domains)[:limit])
+    domains = resolve_url(list(domains)[:10])
     results = []
     for url in domains:
         print("[*] Analyzing:", url)
