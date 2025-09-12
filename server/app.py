@@ -63,7 +63,6 @@ def check_url(url, timeout=3):
         r = requests.get(url, timeout=timeout, allow_redirects=True)
 
         for resp in r.history:
-            print("Redirected from:", resp.url.lower())
             loc = resp.headers.get("Location", "").lower()
             if any(registrar in loc for registrar in REGISTRAR_DOMAINS):
                 return False
@@ -105,6 +104,7 @@ def resolve_url(domains, max_workers=50):
                 results.append(result)
     return results
 
+
 def compare_images(img_bytes1, img_bytes2):
     # Load from bytes
     img1 = Image.open(io.BytesIO(img_bytes1)).convert("L")  # grayscale
@@ -118,8 +118,9 @@ def compare_images(img_bytes1, img_bytes2):
     arr2 = np.array(img2)
     score, diff = ssim(arr1, arr2, full=True)
     print(f"SSIM similarity: {score:.4f}")  # 1.0 = identical
-    
+
     return score, diff
+
 
 def is_valid_domain(domain):
     domain = domain.strip()
@@ -363,7 +364,6 @@ def ss_bytes(website):
         website = "https://" + website
 
     async def capture():
-        print(f"[+] Starting screenshot capture for: {website}")
         try:
             async with async_playwright() as p:
                 browser = await p.chromium.launch(headless=True)
@@ -465,7 +465,7 @@ def squats():
 
     # Store website value in variable
     website = data["website"]
-    
+
     this_website_image = ss_bytes(website)
 
     # Check website for TLD, strip and save
@@ -476,25 +476,26 @@ def squats():
 
     domains = set()
     for url in find_squats(website):
-        print(url)
         if is_valid_tld(url) and is_valid_domain(url):
             domains.add(url)
     print(len(domains))
-    
-    
+
+    if "limit" not in data:
+        limit = len(domains)
     # dont forget to remove the hardcoded[:50] domain limit !IMPORTANT
-    domains = resolve_url(list(domains)[:50])
+    domains = resolve_url(list(domains)[:limit])
     results = []
     for url in domains:
         print("[*] Analyzing:", url)
         a = check_domain(url)
-        
-        print(a)
+
+        #print(a)
         similarity = None
         if len(a["flags"]) >= 1:
             try:
                 this_domain_image = ss_bytes(url)
-                similarity, _ = compare_images(this_website_image, this_domain_image)
+                similarity, _ = compare_images(
+                    this_website_image, this_domain_image)
             except Exception as e:
                 similarity = None  # in case screenshot fails
 
@@ -507,24 +508,8 @@ def squats():
         # Save the similarity score from 0 to 1
         # Logic is below
         results.append(a)
-        
-    # insert script to send image over
-    # ok so idk how yall are gon manage sending image bytes over to the bingus
-    # send domains.url.b64img : b64byte this probavly idk man efuseijodv
-    # do note that the stupid domain registrars enforce redirects thru js not by protocol level and its always by sum
-    # weird ahh js function and ss sent may not be gut
-    
-    print(results)
 
     return jsonify({"domains": results}), 200
-
-
-@app.route('/')
-def test():
-    b = resolve_url(['yeow.com', 'kfow.com'])
-    print(b)
-    return b
-
 
 if __name__ == '__main__':
     app.run(debug=True)
